@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, ShieldCheck, Server, Settings, Users } from 'lucide-react';
+import TenantManager from './components/TenantManager';
 import './index.css';
 
 const GlobalGateway = ({ onUnlock }) => {
@@ -110,25 +111,33 @@ const DashboardAdmin = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {/* Placeholder cards */}
+      {/* Grid de Estado */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="glass-panel p-6 border-t-4 border-t-emerald-500">
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-gray-400 font-medium">Estado del Sistema</h3>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </div>
           <p className="text-3xl font-bold text-white">Operativo</p>
-          <p className="text-sm text-emerald-400 mt-2">Core API Online</p>
+          <p className="text-sm text-emerald-400 mt-2">Firebase Master Online</p>
         </div>
-        <div className="glass-panel p-6 flex flex-col justify-center items-center opacity-50 border-dashed border-2">
-          <Users className="w-8 h-8 text-gray-500 mb-2" />
-          <p className="text-gray-400 text-sm">Módulo Clientes (En desarrollo)</p>
+
+        <div className="glass-panel p-6 border-t-4 border-t-blue-500">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-gray-400 font-medium">Pipeline CI/CD</h3>
+          </div>
+          <p className="text-3xl font-bold text-white">Listo</p>
+          <p className="text-sm text-blue-400 mt-2">GitHub Actions Standby</p>
         </div>
+
         <div className="glass-panel p-6 flex flex-col justify-center items-center opacity-50 border-dashed border-2">
           <Server className="w-8 h-8 text-gray-500 mb-2" />
-          <p className="text-gray-400 text-sm">Módulo Deploy (En desarrollo)</p>
+          <p className="text-gray-400 text-sm">Historial de Despliegues (Próx)</p>
         </div>
       </div>
+
+      {/* Módulo Principal de Administración */}
+      <TenantManager />
     </div>
   );
 };
