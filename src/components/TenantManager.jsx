@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Terminal, Plus, Trash2, Edit2, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Terminal, Plus, Trash2, Edit2, AlertCircle, RefreshCw, LayoutTemplate } from 'lucide-react';
 
 export default function TenantManager() {
     const [tenants, setTenants] = useState([]);
@@ -14,7 +14,7 @@ export default function TenantManager() {
     const [formData, setFormData] = useState({
         name: '',
         projectId: '',
-        firebaseToken: '', // Token especial si aplica o PAT
+        firebaseToken: '',
         plan: 'Basic',
         maxEmployees: 30
     });
@@ -71,7 +71,7 @@ export default function TenantManager() {
     };
 
     const handleDelete = async (id, name) => {
-        if (window.confirm(`¿Estás seguro de eliminar al cliente ${name}? Esto no borrará su base de datos, solo lo quitará de este panel.`)) {
+        if (window.confirm(`¿Estás seguro de eliminar a ${name}? Esto solo lo borra del panel, no borra el proyecto de Google.`)) {
             await deleteDoc(doc(db, 'tenants', id));
             setSelectedTenants(prev => prev.filter(t => t !== id));
         }
@@ -91,107 +91,123 @@ export default function TenantManager() {
 
     const triggerDeploy = async () => {
         if (selectedTenants.length === 0) {
-            alert("Selecciona al menos un cliente para desplegar.");
+            alert("Selecciona al menos un cliente en la tabla.");
             return;
         }
 
         const count = selectedTenants.length;
-        if (!window.confirm(`¿Estás seguro de iniciar el despliegue automático hacia ${count} cliente(s)?`)) return;
+        if (!window.confirm(`Mandarás una actualización de código para ${count} cliente(s) seleccionados. ¿Continuar?`)) return;
 
-        // Aquí irá la lógica de despliegue hacia GitHub Actions / Cloud Functions
-        alert(`Deploy iniciado para ${count} clientes (En desarrollo Fase 3)`);
+        alert(`Simulación: Despliegue iniciado para ${count} clientes.`);
     };
 
     return (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl">
-            <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-3xl p-8 md:p-10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200">
+
+            {/* Header del Gestor */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                 <div>
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Terminal className="text-emerald-400" />
-                        Proyectos de Clientes (Tenants)
+                    <h2 className="text-2xl font-extrabold text-slate-800 flex items-center gap-3">
+                        <LayoutTemplate className="text-blue-500 w-8 h-8" />
+                        Proyectos de Clientes Activos
                     </h2>
-                    <p className="text-gray-400 text-sm mt-1">Registra los Firebase de tus clientes para futuros despliegues masivos.</p>
+                    <p className="text-slate-500 text-base mt-2 font-medium">Gestiona y selecciona las bases de datos externas para actualizar el código.</p>
                 </div>
-                <div className="flex gap-3">
+
+                <div className="flex flex-wrap gap-4 w-full md:w-auto">
                     <button
                         onClick={() => { setFormData({ name: '', projectId: '', firebaseToken: '', plan: 'Basic', maxEmployees: 30 }); setEditingId(null); setIsFormOpen(true); }}
-                        className="px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg flex items-center gap-2 transition"
+                        className="px-6 py-3.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 font-bold rounded-xl flex items-center justify-center gap-2 transition"
                     >
-                        <Plus size={18} /> Nuevo Cliente
+                        <Plus size={20} /> Nuevo Cliente
                     </button>
 
                     <button
                         onClick={triggerDeploy}
                         disabled={selectedTenants.length === 0}
-                        className={`px-4 py-2 rounded-lg flex items-center gap-2 transition font-bold ${selectedTenants.length > 0
-                                ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                        className={`px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 transition font-bold ${selectedTenants.length > 0
+                                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_8px_20px_rgba(37,99,235,0.3)]'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                             }`}
                     >
-                        <RefreshCw size={18} className={selectedTenants.length > 0 ? 'animate-spin-slow' : ''} />
-                        Desplegar Actualización ({selectedTenants.length})
+                        <RefreshCw size={20} className={selectedTenants.length > 0 ? 'animate-spin-slow' : ''} />
+                        Desplegar a Seleccionados ({selectedTenants.length})
                     </button>
                 </div>
             </div>
 
+            {/* Formulario Modal (Inline por ahora) */}
             {isFormOpen && (
-                <div className="mb-8 bg-gray-900/50 p-6 rounded-xl border border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">{editingId ? 'Editar' : 'Agregar'} Cliente</h3>
-                    <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-10 bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-inner">
+                    <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        {editingId ? <Edit2 className="text-blue-500" /> : <Plus className="text-blue-500" />}
+                        {editingId ? 'Editar Cliente Existente' : 'Registrar Nuevo Cliente'}
+                    </h3>
+                    <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">Nombre Comercial / Dueño</label>
-                            <input required type="text" className="input-field" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Supermercado Los Alpes" />
+                            <label className="block text-sm font-bold text-slate-600 mb-2">Nombre Comercial o Dueño</label>
+                            <input required type="text" className="input-field shadow-sm bg-white" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Sucursal Norte S.A." />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-400 mb-1">Firebase Project ID</label>
-                            <input required type="text" className="input-field font-mono text-sm" value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })} placeholder="Ej: cliente-alpes-cf" />
+                            <label className="block text-sm font-bold text-slate-600 mb-2">Firebase Project ID <span className="text-slate-400 font-normal">(El identificador de Google)</span></label>
+                            <input required type="text" className="input-field shadow-sm bg-white font-mono text-blue-600 font-bold tracking-wide" value={formData.projectId} onChange={e => setFormData({ ...formData, projectId: e.target.value })} placeholder="Ej: sucursal-norte-xyz" />
                         </div>
-                        {/* Otros campos futuros */}
-                        <div className="flex items-end gap-3 md:col-span-2 mt-4">
-                            <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white transition">Cancelar</button>
-                            <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition">Guardar Cliente</button>
+                        <div className="flex items-center gap-4 md:col-span-2 pt-4 border-t border-slate-200 mt-2">
+                            <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-3 font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition">Cancelar</button>
+                            <button type="submit" className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition shadow-[0_4px_14px_rgba(16,185,129,0.4)]">Finalizar Guardado</button>
                         </div>
                     </form>
                 </div>
             )}
 
+            {/* Tabla */}
             {loading ? (
-                <div className="py-12 flex justify-center"><Terminal className="text-gray-600 animate-pulse w-8 h-8" /></div>
+                <div className="py-20 flex justify-center items-center flex-col gap-4">
+                    <Terminal className="text-slate-300 animate-pulse w-12 h-12" />
+                    <p className="text-slate-500 font-medium">Buscando en la base central...</p>
+                </div>
             ) : tenants.length === 0 ? (
-                <div className="py-12 text-center text-gray-500 border border-dashed border-gray-700 rounded-xl">
-                    <AlertCircle className="mx-auto w-10 h-10 mb-3 text-gray-600" />
-                    <p>No hay clientes registrados aún.</p>
+                <div className="py-20 text-center text-slate-500 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                    <AlertCircle className="mx-auto w-14 h-14 mb-4 text-slate-300" />
+                    <p className="text-lg font-medium">La base de datos está totalmente vacía.</p>
+                    <p className="text-sm mt-2 text-slate-400">Comienza registrando un cliente usando el Project ID.</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto rounded-xl border border-white/5">
-                    <table className="w-full text-left text-sm text-gray-300">
-                        <thead className="text-xs text-gray-400 uppercase bg-gray-800/50">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+                    <table className="w-full text-left text-sm text-slate-600">
+                        <thead className="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200 font-bold">
                             <tr>
-                                <th className="p-4 w-12">
-                                    <input type="checkbox" onChange={handleSelectAll} checked={selectedTenants.length === tenants.length && tenants.length > 0} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-600 focus:ring-offset-gray-800" />
+                                <th className="p-5 w-16 text-center">
+                                    <input type="checkbox" onChange={handleSelectAll} checked={selectedTenants.length === tenants.length && tenants.length > 0} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                                 </th>
-                                <th className="p-4">Cliente</th>
-                                <th className="p-4">Project ID</th>
-                                <th className="p-4 text-center">Estado</th>
-                                <th className="p-4 text-right">Acciones</th>
+                                <th className="p-5">Comercial / Identidad</th>
+                                <th className="p-5">Project ID</th>
+                                <th className="p-5 text-center">Estado del Link</th>
+                                <th className="p-5 text-right">Manejo</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5 bg-gray-900/30">
+                        <tbody className="divide-y divide-slate-100 bg-white">
                             {tenants.map(t => (
-                                <tr key={t.id} className="hover:bg-white/5 transition">
-                                    <td className="p-4">
-                                        <input type="checkbox" checked={selectedTenants.includes(t.id)} onChange={() => handleSelect(t.id)} className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-600 focus:ring-offset-gray-900" />
+                                <tr key={t.id} className="hover:bg-slate-50 transition duration-150 group">
+                                    <td className="p-5 text-center">
+                                        <input type="checkbox" checked={selectedTenants.includes(t.id)} onChange={() => handleSelect(t.id)} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                                     </td>
-                                    <td className="p-4 font-medium text-white">{t.name}</td>
-                                    <td className="p-4 font-mono text-xs text-blue-400">{t.projectId}</td>
-                                    <td className="p-4 text-center">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Activo
+                                    <td className="p-5">
+                                        <span className="font-bold text-slate-800 text-base">{t.name}</span>
+                                    </td>
+                                    <td className="p-5">
+                                        <span className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">{t.projectId}</span>
+                                    </td>
+                                    <td className="p-5 text-center">
+                                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Verificado
                                         </span>
                                     </td>
-                                    <td className="p-4 text-right">
-                                        <button onClick={() => editTenant(t)} className="p-1.5 text-gray-400 hover:text-blue-400 transition"><Edit2 size={16} /></button>
-                                        <button onClick={() => handleDelete(t.id, t.name)} className="p-1.5 text-gray-400 hover:text-red-400 transition ml-2"><Trash2 size={16} /></button>
+                                    <td className="p-5 text-right">
+                                        <div className="flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => editTenant(t)} className="p-2.5 bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar datos"><Edit2 size={18} /></button>
+                                            <button onClick={() => handleDelete(t.id, t.name)} className="p-2.5 bg-slate-100 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title="Remover de la base"><Trash2 size={18} /></button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
