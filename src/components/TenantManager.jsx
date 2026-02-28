@@ -95,10 +95,47 @@ export default function TenantManager() {
             return;
         }
 
-        const count = selectedTenants.length;
-        if (!window.confirm(`Mandarás una actualización de código para ${count} cliente(s) seleccionados. ¿Continuar?`)) return;
+        const tenantsToDeploy = tenants
+            .filter(t => selectedTenants.includes(t.id))
+            .map(t => ({
+                projectId: t.projectId,
+                name: t.name,
+            }));
 
-        alert(`Simulación: Despliegue iniciado para ${count} clientes.`);
+        const count = tenantsToDeploy.length;
+        if (!window.confirm(`Mandarás una actualización de código para ${count} cliente(s) seleccionados. ¿Continuar con el despliegue en la nube?`)) return;
+
+        try {
+            document.body.style.cursor = 'wait';
+            const btn = document.getElementById('btn-deploy');
+            if (btn) btn.innerHTML = '<span class="animate-spin">⏳</span> Iniciando API...';
+
+            const cloudFunctionUrl = "https://us-central1-controlface-desplegador.cloudfunctions.net/triggerGitHubDeploy";
+
+            const res = await fetch(cloudFunctionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ tenants: tenantsToDeploy })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Error desconocido del servidor Backend');
+            }
+
+            alert(`✅ Despliegue Iniciado Correctamente.\nGitHub Actions está compilando el código para los ${count} clientes. Puedes revisar la barra "Historial de Despliegues" más tarde o ir a tu Github.`);
+
+        } catch (e) {
+            console.error(e);
+            alert(`❌ Fallo en la comunicación:\n${e.message}`);
+        } finally {
+            document.body.style.cursor = 'default';
+            const btn = document.getElementById('btn-deploy');
+            if (btn) btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Desplegar a Seleccionados (${selectedTenants.length})`;
+        }
     };
 
     return (
@@ -123,11 +160,12 @@ export default function TenantManager() {
                     </button>
 
                     <button
+                        id="btn-deploy"
                         onClick={triggerDeploy}
                         disabled={selectedTenants.length === 0}
                         className={`px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 transition font-bold ${selectedTenants.length > 0
-                                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_8px_20px_rgba(37,99,235,0.3)]'
-                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_8px_20px_rgba(37,99,235,0.3)]'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                             }`}
                     >
                         <RefreshCw size={20} className={selectedTenants.length > 0 ? 'animate-spin-slow' : ''} />
